@@ -1,0 +1,4 @@
+Pillow
+reportlab
+google-genai
+python-dotenv
