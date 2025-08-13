@@ -89,16 +89,60 @@ def create_plan_pdf(image_path: str, output_pdf_path: str, page_size=A4) -> bool
     st.success(f"PDF '{output_pdf_path}' created successfully!")
     return True
 
-# Modified get_plan_analysis function to fix the API configuration issue
-def get_plan_analysis(gemini_api_key: str, pdf_path: str, is_master_plan: bool = True) -> str:
+# Modified get_plan_analysis function to accept a custom prompt
+def get_plan_analysis(gemini_api_key: str, pdf_path: str, prompt_text: str) -> str:
     if not gemini_api_key:
         return "Error: Gemini API key not provided."
     if not os.path.exists(pdf_path):
         return f"Error: PDF file not found at {pdf_path}"
+    if not prompt_text.strip():
+        return "Error: Prompt text cannot be empty."
 
     # Initialize client with API key
     client = genai.Client(api_key=gemini_api_key)
 
+    filepath = pathlib.Path(pdf_path)
+    pdf_bytes = filepath.read_bytes()
+
+    contents = [
+        types.Part.from_bytes(
+            data=pdf_bytes,
+            mime_type='application/pdf',
+        ),
+        types.Part(text=prompt_text)
+    ]
+
+    with st.spinner("Analyzing plan with Gemini..."):
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    response_modalities=["TEXT"]
+                ),
+            )
+            return response.text
+        except Exception as e:
+            return f"Error interacting with Gemini API: {e}. Check API key and model access."
+
+# Streamlit app
+def main():
+    st.title("Plan PDF Generator and Analyzer")
+    st.write("Upload a master plan or floor plan image to generate a PDF and get an analysis using Gemini API.")
+
+    # Gemini API key input
+    gemini_api_key = os.getenv("UAT_GEMINI_API_KEY")
+    if not gemini_api_key:
+        gemini_api_key = st.text_input("Enter your Gemini API Key", type="password")
+        if not gemini_api_key:
+            st.warning("Please provide a valid Gemini API key to proceed.")
+            return
+
+    # Plan type selection
+    plan_type = st.radio("Select Plan Type", ("Master Plan", "Floor Plan"))
+    is_master_plan = plan_type == "Master Plan"
+
+    # Default prompts
     master_plan_llm_prompt_text = """
 As the builder of this property, your task is to sell this master plan. Extract and present information from the provided PDF. Be concise, direct, and factual, adhering strictly to what is visibly presented or explicitly stated in the master plan sections, without assumptions or excessive synonyms. Utilize the detailed views from pages 2-5.
 
@@ -135,48 +179,13 @@ Key Dimensions & Features: Provide any other directly stated measurements such a
 Light & Ventilation Assessment: Based on the visible layout, describe the apparent natural light and ventilation characteristics of key areas, noting window placements or air flow indicators.
     """
 
-    selected_prompt_text = master_plan_llm_prompt_text if is_master_plan else floor_plan_llm_prompt_text
+    # Select default prompt based on plan type
+    default_prompt_text = master_plan_llm_prompt_text if is_master_plan else floor_plan_llm_prompt_text
 
-    filepath = pathlib.Path(pdf_path)
-    pdf_bytes = filepath.read_bytes()
-
-    contents = [
-        types.Part.from_bytes(
-            data=pdf_bytes,
-            mime_type='application/pdf',
-        ),
-        types.Part(text=selected_prompt_text)
-    ]
-
-    with st.spinner(f"Analyzing {'master plan' if is_master_plan else 'floor plan'} with Gemini..."):
-        try:
-            response = client.models.generate_content(
-                model="gemini-2.5-flash",  # Updated to a valid model
-                contents=contents,
-                config=types.GenerateContentConfig(
-                    response_modalities=["TEXT"]
-                ),
-            )
-            return response.text
-        except Exception as e:
-            return f"Error interacting with Gemini API: {e}. Check API key and model access."
-
-# Streamlit app
-def main():
-    st.title("Plan PDF Generator and Analyzer")
-    st.write("Upload a master plan or floor plan image to generate a PDF and get an analysis using Gemini API.")
-
-    # Gemini API key input
-    gemini_api_key = os.getenv("UAT_GEMINI_API_KEY")
-    if not gemini_api_key:
-        gemini_api_key = st.text_input("Enter your Gemini API Key", type="password")
-        if not gemini_api_key:
-            st.warning("Please provide a valid Gemini API key to proceed.")
-            return
-
-    # Plan type selection
-    plan_type = st.radio("Select Plan Type", ("Master Plan", "Floor Plan"))
-    is_master_plan = plan_type == "Master Plan"
+    # Prompt editing UI
+    st.subheader("Edit Analysis Prompt")
+    st.write("Modify the prompt below to customize the analysis. Leave as is to use the default prompt.")
+    custom_prompt = st.text_area("Analysis Prompt", value=default_prompt_text, height=300)
 
     # Image upload
     uploaded_file = st.file_uploader("Upload Plan Image (JPG/PNG)", type=["jpg", "png", "jpeg"])
@@ -207,8 +216,8 @@ def main():
                         mime="application/pdf"
                     )
 
-                # Step 2: Get analysis
-                analysis_response = get_plan_analysis(gemini_api_key, output_pdf_path, is_master_plan)
+                # Step 2: Get analysis with custom prompt
+                analysis_response = get_plan_analysis(gemini_api_key, output_pdf_path, custom_prompt)
 
                 # Display analysis
                 st.subheader("Plan Analysis")
