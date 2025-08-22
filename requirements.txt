@@ -1,5 +1,7 @@
 Pillow
+fastapi
 reportlab
-streamlit
 google-genai
 python-dotenv
+uvicorn
+python-multipart

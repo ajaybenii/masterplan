@@ -143,41 +143,58 @@ def main():
     is_master_plan = plan_type == "Master Plan"
 
     # Default prompts
-    master_plan_llm_prompt_text = """
-As the builder of this property, your task is to sell this master plan. Extract and present information from the provided PDF. Be concise, direct, and factual, adhering strictly to what is visibly presented or explicitly stated in the master plan sections, without assumptions or excessive synonyms. Utilize the detailed views from pages 2-5.
+    master_plan_llm_prompt_text = """As the builder of this property, your task is to generate a description of this master plan. Extract and present information from the provided PDF. Be concise, direct, and factual, adhering strictly to what is visibly presented or explicitly stated in the master plan sections, without assumptions or excessive synonyms. Utilize the detailed views from pages 2-5.I want meaning full description which is attract to buyers but do it in simple and natural language.
 
-PDF Structure Overview:
-Page 1: Full master plan view.
-Page 2: Focus on the upper-left quadrant.
-Page 3: Focus on the upper-right quadrant.
-Page 4: Focus on the lower-left quadrant.
-Page 5: Focus on the lower-right quadrant.
+        PDF Structure Overview:
+        Page 1: Full master plan view.
+        Page 2: Focus on the upper-left quadrant.
+        Page 3: Focus on the upper-right quadrant.
+        Page 4: Focus on the lower-left quadrant.
+        Page 5: Focus on the lower-right quadrant.
 
-Present the master plan's features by describing the following points. Focus on rigorous, eye-catching details.
-Project Scope: State the total land area, number of units, and number of towers. Mention project launch and completion dates if visible.
-Land Use & Density: Identify and specify designated zones (e.g., residential, commercial, open spaces) and their visible allocations or percentages. State units per acre.
-Connectivity & Access: Detail visible internal road networks, primary access points, and any significant external connectivity features. Mention widths if indicated.
-On-Site Features & Amenities: List all explicitly drawn or labeled amenities (e.g., clubhouse, parks, sports courts, specific utility placements). State any visible area sizes for these features.
-Key Dimensions & Figures: Provide any other directly stated measurements, capacities, or distinguishing numerical facts about the master plan components.
-    """
+        Present the master plan's features by describing the following points. 
+        Focus on rigorous, eye-catching details.
+        Project Scope: State the total land area, number of units, and number of towers. Mention project launch and completion dates if visible.
+        Land Use & Density: Identify and specify designated zones (e.g., residential, commercial, open spaces) and their visible allocations or percentages. State units per acre.
+        Connectivity & Access: Detail visible internal road networks, primary access points, and any significant external connectivity features. Mention widths if indicated.
+        On-Site Features & Amenities: List all explicitly drawn or labeled amenities (e.g., clubhouse, parks, sports courts, specific utility placements). State any visible area sizes for these features.( i just want 3-4 meaningfull bullet points.)
+        Key Dimensions & Figures: Provide any other directly stated measurements, capacities, or distinguishing numerical facts about the master plan components.( i just want 3-4 meaningfull bullet points.)
 
-    floor_plan_llm_prompt_text = """
-As the builder of this property, your task is to sell this floor plan. Extract and present information from the provided PDF. Be concise, direct, and factual, adhering strictly to what is visibly presented or explicitly stated in the floor plan, without assumptions or excessive synonyms. Utilize the detailed views from pages 2-5 for granular insights into each section.
+        Note: Don't mention you get this info from master plan, just explain the things like you are the seller of this project."""
 
-PDF Structure Overview:
-Page 1: Full floor plan view.
-Page 2: Focus on the upper-left quadrant.
-Page 3: Focus on the upper-right quadrant.
-Page 4: Focus on the lower-left quadrant.
-Page 5: Focus on the lower-right quadrant.
+    floor_plan_llm_prompt_text = """As the builder of this property, your task is to sell this floor plan. Extract and present information from the provided PDF. Be concise, direct, and factual, adhering strictly to what is visibly presented or explicitly stated in the floor plan, without assumptions or excessive synonyms. Dont mention sizes in bulletpoints. Just write simple and meaningfull sentance. I want just 3-4 bullet point in response.
 
-Present the floor plan's features by describing the following points. Focus on rigorous, eye-catching details.
-Unit Overview: State the visible unit typology (e.g., 2BHK, 3BHK). Provide overall visible area figures like Saleable Area and RERA Carpet Area, along with efficiency percentages if shown.
-Room-by-Room Details: Identify and describe each primary room (e.g., Living, Dining, Kitchen, Master Bedroom, other Bedrooms, Bathrooms). State any visible dimensions (length x width) or explicit area measurements for each.
-Functional Spaces & Flow: Detail visible utility areas, balconies (including number and area percentage if available), and storage niches. Describe the visible internal circulation and connectivity between spaces.
-Key Dimensions & Features: Provide any other directly stated measurements such as floor-to-ceiling height. Mention visible design elements like the number of lifts per tower or units per floor if relevant to the unit's context.
-Light & Ventilation Assessment: Based on the visible layout, describe the apparent natural light and ventilation characteristics of key areas, noting window placements or air flow indicators.
-    """
+        PDF Structure Overview:
+        Page 1: Full floor plan view.
+        Page 2: Focus on the upper-left quadrant.
+        Page 3: Focus on the upper-right quadrant.
+        Page 4: Focus on the lower-left quadrant.
+        Page 5: Focus on the lower-right quadrant.
+        
+        Write in plain English with short sentences.
+        Be direct and concise.
+        Use a natural, conversational tone (contractions ok; starting with ‘And/But’ is fine).
+        Avoid hype, clichés, and marketing speak.
+        Cut adverbs and filler.
+        Prefer active voice.
+        
+        An sample format of output is this:
+        Expected Floor plan output
+
+        Smartly designed layout with zero space wastage and cross-ventilation in all rooms
+
+        Master bedroom with attached balcony overlooking landscaped greens
+
+        Open kitchen with dining space optimized for modern living
+
+
+        or 
+
+        Spacious living-dining area opening to a wide balcony for natural light & fresh air
+
+        Master Bedroom with walk-in wardrobe and attached bath for added privacy
+
+        Separate utility & storage space for efficient home management"""
 
     # Select default prompt based on plan type
     default_prompt_text = master_plan_llm_prompt_text if is_master_plan else floor_plan_llm_prompt_text
